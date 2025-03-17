@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronDown, User } from "lucide-react";
+import { Calendar, ChevronDown, User, History } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ interface DocumentCardProps {
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
   onChangeStatus: (doc: Document, status: "Draft" | "In Review" | "Approved" | "Obsolete") => void;
+  onViewAuditTrail: (doc: Document) => void;
 }
 
 const DocumentCard = ({ 
@@ -26,7 +27,8 @@ const DocumentCard = ({
   onView, 
   onEdit, 
   onDelete, 
-  onChangeStatus 
+  onChangeStatus,
+  onViewAuditTrail
 }: DocumentCardProps) => {
   const DocIcon = getDocumentIcon(document.type);
   
@@ -68,13 +70,24 @@ const DocumentCard = ({
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-between border-t">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => onView(document)}
-        >
-          View
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onView(document)}
+          >
+            View
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onViewAuditTrail(document)}
+            className="flex items-center"
+          >
+            <History className="h-3.5 w-3.5 mr-1" />
+            Audit Trail
+          </Button>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" size="sm">

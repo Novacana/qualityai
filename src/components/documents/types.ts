@@ -11,6 +11,7 @@ export interface Document {
   version: string;
   content?: string;
   description?: string;
+  auditTrail?: AuditEntry[];
 }
 
 export interface NewDocument {
@@ -20,4 +21,14 @@ export interface NewDocument {
   qmsType: string;
   description?: string;
   content?: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  timestamp: string;
+  username: string;
+  action: "Created" | "Modified" | "Reviewed" | "Approved" | "Status Change" | "Obsoleted";
+  details: string;
+  previousVersion?: string;
+  newVersion?: string;
 }

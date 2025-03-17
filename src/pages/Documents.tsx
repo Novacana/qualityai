@@ -1,11 +1,14 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
-import { Document, NewDocument } from "@/components/documents/types";
+import { Document, NewDocument, AuditEntry } from "@/components/documents/types";
 import DocumentFilters from "@/components/documents/DocumentFilters";
 import DocumentTabs from "@/components/documents/DocumentTabs";
 import DocumentViewDialog from "@/components/documents/DocumentViewDialog";
 import DocumentEditDialog from "@/components/documents/DocumentEditDialog";
 import CreateDocumentDialog from "@/components/documents/CreateDocumentDialog";
+import AuditTrailDialog from "@/components/documents/AuditTrailDialog";
+import { createAuditEntry } from "@/components/documents/utils";
 
 const Documents = () => {
   // State for documents
@@ -605,6 +608,7 @@ All personnel involved in usability testing shall be trained on this SOP and the
   // State for dialogs
   const [showViewDocumentDialog, setShowViewDocumentDialog] = useState(false);
   const [showEditDocumentDialog, setShowEditDocumentDialog] = useState(false);
+  const [showAuditTrailDialog, setShowAuditTrailDialog] = useState(false);
   const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   
   // Get unique document types, statuses, etc. for filtering
@@ -612,6 +616,9 @@ All personnel involved in usability testing shall be trained on this SOP and the
   const documentStatuses = Array.from(new Set(documents.map(doc => doc.status)));
   const projectNames = Array.from(new Set(documents.map(doc => doc.project)));
   const qmsTypes = Array.from(new Set(documents.map(doc => doc.qmsType)));
+  
+  // Mock current user - in a real app, this would come from authentication
+  const currentUser = "Current User";
   
   // Filter documents based on search term, type, and status
   let filteredDocuments = documents.filter(doc => 
@@ -661,10 +668,19 @@ All personnel involved in usability testing shall be trained on this SOP and the
       project: newDocument.project,
       qmsType: newDocument.qmsType,
       updatedAt: new Date().toISOString().split('T')[0],
-      author: "Current User",
+      author: currentUser,
       version: "0.1",
       content: newDocument.content,
-      description: newDocument.description
+      description: newDocument.description,
+      auditTrail: [
+        createAuditEntry(
+          currentUser,
+          "Created",
+          `Document was created with initial draft status`,
+          undefined,
+          "0.1"
+        )
+      ]
     };
 
     setDocuments([newDoc, ...documents]);
@@ -683,11 +699,61 @@ All personnel involved in usability testing shall be trained on this SOP and the
     setShowEditDocumentDialog(true);
   };
 
+  // View audit trail
+  const handleViewAuditTrail = (doc: Document) => {
+    setCurrentDocument(doc);
+    setShowAuditTrailDialog(true);
+  };
+
   // Save edited document
   const handleSaveEditedDocument = (editedDocument: Document) => {
+    // Calculate if version should be increased
+    let newVersion = editedDocument.version;
+    const originalDoc = documents.find(doc => doc.id === editedDocument.id);
+    
+    // Determine what changed
+    const titleChanged = originalDoc?.title !== editedDocument.title;
+    const contentChanged = originalDoc?.content !== editedDocument.content;
+    const descriptionChanged = originalDoc?.description !== editedDocument.description;
+    
+    // If content changed, increment version number
+    if (contentChanged) {
+      // Parse version number and increment minor version
+      const versionParts = editedDocument.version.split('.');
+      if (versionParts.length >= 2) {
+        const major = parseInt(versionParts[0]);
+        const minor = parseInt(versionParts[1]);
+        newVersion = `${major}.${minor + 1}`;
+      }
+    }
+    
+    // Create audit entry for the changes
+    let auditDetails = "Document was modified: ";
+    if (titleChanged) auditDetails += "title updated; ";
+    if (contentChanged) auditDetails += "content updated; ";
+    if (descriptionChanged) auditDetails += "description updated; ";
+    
+    // Get previous audit trail or create empty array
+    const previousAuditTrail = originalDoc?.auditTrail || [];
+    
+    // Create the new audit entry
+    const newAuditEntry = createAuditEntry(
+      currentUser,
+      "Modified",
+      auditDetails,
+      originalDoc?.version,
+      contentChanged ? newVersion : undefined
+    );
+    
+    // Update the document in the collection
     setDocuments(documents.map(doc => 
       doc.id === editedDocument.id 
-        ? {...editedDocument, updatedAt: new Date().toISOString().split('T')[0]} 
+        ? {
+            ...editedDocument, 
+            updatedAt: new Date().toISOString().split('T')[0],
+            version: contentChanged ? newVersion : doc.version,
+            auditTrail: [...previousAuditTrail, newAuditEntry]
+          } 
         : doc
     ));
     
@@ -725,10 +791,79 @@ All personnel involved in usability testing shall be trained on this SOP and the
 
   // Change document status
   const handleChangeStatus = (doc: Document, newStatus: "Draft" | "In Review" | "Approved" | "Obsolete") => {
+    // Get previous audit trail or create empty array
+    const previousAuditTrail = doc.auditTrail || [];
+    
+    // Create appropriate audit message based on status
+    let auditAction: AuditEntry["action"] = "Status Change";
+    let details = `Document status changed from ${doc.status} to ${newStatus}`;
+    
+    if (newStatus === "Approved") {
+      auditAction = "Approved";
+      
+      // If approving, increment major version if coming from a draft
+      if (doc.status === "Draft" || doc.status === "In Review") {
+        const versionParts = doc.version.split('.');
+        if (versionParts.length >= 2) {
+          const major = parseInt(versionParts[0]);
+          const newVersion = `${major + 1}.0`;
+          
+          // Create the new audit entry with version change
+          const newAuditEntry = createAuditEntry(
+            currentUser,
+            auditAction,
+            details,
+            doc.version,
+            newVersion
+          );
+          
+          // Update document with new status, date, version and audit entry
+          setDocuments(
+            documents.map(d => 
+              d.id === doc.id 
+                ? { 
+                    ...d, 
+                    status: newStatus, 
+                    updatedAt: new Date().toISOString().split('T')[0],
+                    version: newVersion,
+                    auditTrail: [...previousAuditTrail, newAuditEntry]
+                  } 
+                : d
+            )
+          );
+          
+          const statusMessages = {
+            Draft: "saved as draft",
+            "In Review": "set to review",
+            Approved: "approved",
+            Obsolete: "marked as obsolete"
+          };
+          
+          toast.success(`Document has been ${statusMessages[newStatus]}`);
+          return;
+        }
+      }
+    } else if (newStatus === "Obsolete") {
+      auditAction = "Obsoleted";
+    }
+    
+    // Create the new audit entry
+    const newAuditEntry = createAuditEntry(
+      currentUser,
+      auditAction,
+      details
+    );
+    
+    // Update document with new status, date and audit entry
     setDocuments(
       documents.map(d => 
         d.id === doc.id 
-          ? { ...d, status: newStatus, updatedAt: new Date().toISOString().split('T')[0] } 
+          ? { 
+              ...d, 
+              status: newStatus, 
+              updatedAt: new Date().toISOString().split('T')[0],
+              auditTrail: [...previousAuditTrail, newAuditEntry]
+            } 
           : d
       )
     );
@@ -780,6 +915,7 @@ All personnel involved in usability testing shall be trained on this SOP and the
         onEdit={handleEditDocument}
         onDelete={handleDeleteDocument}
         onChangeStatus={handleChangeStatus}
+        onViewAuditTrail={handleViewAuditTrail}
       />
 
       <DocumentViewDialog
@@ -795,6 +931,12 @@ All personnel involved in usability testing shall be trained on this SOP and the
         onOpenChange={setShowEditDocumentDialog}
         onSave={handleSaveEditedDocument}
         projectNames={projectNames}
+      />
+      
+      <AuditTrailDialog
+        document={currentDocument}
+        open={showAuditTrailDialog}
+        onOpenChange={setShowAuditTrailDialog}
       />
     </div>
   );

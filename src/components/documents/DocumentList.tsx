@@ -8,6 +8,7 @@ interface DocumentListProps {
   onEdit: (doc: Document) => void;
   onDelete: (doc: Document) => void;
   onChangeStatus: (doc: Document, status: "Draft" | "In Review" | "Approved" | "Obsolete") => void;
+  onViewAuditTrail: (doc: Document) => void;
   emptyMessage?: string;
 }
 
@@ -17,6 +18,7 @@ const DocumentList = ({
   onEdit, 
   onDelete, 
   onChangeStatus,
+  onViewAuditTrail,
   emptyMessage = "No documents found matching your filters."
 }: DocumentListProps) => {
   if (documents.length === 0) {
@@ -37,6 +39,7 @@ const DocumentList = ({
           onEdit={onEdit}
           onDelete={onDelete}
           onChangeStatus={onChangeStatus}
+          onViewAuditTrail={onViewAuditTrail}
         />
       ))}
     </div>

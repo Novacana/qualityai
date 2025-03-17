@@ -1,5 +1,6 @@
 
 import { FileCheck, FileText } from "lucide-react";
+import { AuditEntry } from "./types";
 
 export const getBadgeVariant = (status: string) => {
   switch (status) {
@@ -28,4 +29,22 @@ export const getDocumentIcon = (type: string) => {
     default:
       return FileText;
   }
+};
+
+export const createAuditEntry = (
+  username: string, 
+  action: AuditEntry["action"], 
+  details: string,
+  previousVersion?: string,
+  newVersion?: string
+): AuditEntry => {
+  return {
+    id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    username,
+    action,
+    details,
+    previousVersion,
+    newVersion
+  };
 };
