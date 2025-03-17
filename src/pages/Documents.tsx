@@ -2,16 +2,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, FileCheck, Filter, Plus, Calendar, User, ArrowUpDown, ChevronDown } from "lucide-react";
+import { Search, Plus, Filter, ArrowUpDown, ChevronDown, Calendar, User, FileText, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { 
   DropdownMenu,
@@ -23,6 +16,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Document {
   id: string;
@@ -42,9 +47,17 @@ const Documents = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"title" | "updatedAt" | "status">("updatedAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [showCreateDocumentDialog, setShowCreateDocumentDialog] = useState(false);
+  const [newDocument, setNewDocument] = useState({
+    title: '',
+    type: 'SOP',
+    project: '',
+    qmsType: 'ISO 9001',
+    description: ''
+  });
   
   // Mock documents data
-  const documents: Document[] = [
+  const [documents, setDocuments] = useState<Document[]>([
     {
       id: "DOC-001",
       title: "Quality Management System Manual",
@@ -111,11 +124,13 @@ const Documents = () => {
       author: "Dr. Michael Brown",
       version: "1.1"
     }
-  ];
+  ]);
   
   // Get unique document types and statuses for filtering
   const documentTypes = Array.from(new Set(documents.map(doc => doc.type)));
   const documentStatuses = Array.from(new Set(documents.map(doc => doc.status)));
+  const projectNames = Array.from(new Set(documents.map(doc => doc.project)));
+  const qmsTypes = Array.from(new Set(documents.map(doc => doc.qmsType)));
   
   // Filter documents based on search term, type, and status
   let filteredDocuments = documents.filter(doc => 
@@ -186,6 +201,98 @@ const Documents = () => {
     }
   };
 
+  // Create a new document
+  const handleCreateDocument = () => {
+    if (!newDocument.title || !newDocument.type || !newDocument.project) {
+      toast.error("Bitte füllen Sie alle Pflichtfelder aus");
+      return;
+    }
+
+    const newDoc: Document = {
+      id: `DOC-${String(documents.length + 1).padStart(3, '0')}`,
+      title: newDocument.title,
+      type: newDocument.type as any,
+      status: "Draft",
+      project: newDocument.project,
+      qmsType: newDocument.qmsType,
+      updatedAt: new Date().toISOString().split('T')[0],
+      author: "Current User",
+      version: "0.1"
+    };
+
+    setDocuments([newDoc, ...documents]);
+    setShowCreateDocumentDialog(false);
+    setNewDocument({
+      title: '',
+      type: 'SOP',
+      project: '',
+      qmsType: 'ISO 9001',
+      description: ''
+    });
+    toast.success("Dokument wurde erstellt");
+  };
+
+  // View document details
+  const handleViewDocument = (doc: Document) => {
+    toast.info(`Dokument wird angezeigt: ${doc.title}`);
+  };
+
+  // Edit document
+  const handleEditDocument = (doc: Document) => {
+    toast.info(`Dokument wird bearbeitet: ${doc.title}`);
+  };
+
+  // Delete document
+  const handleDeleteDocument = (doc: Document) => {
+    toast.info(
+      <div className="flex flex-col gap-2">
+        <p>Möchten Sie "{doc.title}" wirklich löschen?</p>
+        <div className="flex justify-end gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => toast.dismiss()}
+          >
+            Abbrechen
+          </Button>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => {
+              setDocuments(documents.filter(d => d.id !== doc.id));
+              toast.success("Dokument wurde gelöscht");
+            }}
+          >
+            Löschen
+          </Button>
+        </div>
+      </div>,
+      {
+        duration: 5000,
+      }
+    );
+  };
+
+  // Change document status
+  const handleChangeStatus = (doc: Document, newStatus: "Draft" | "In Review" | "Approved" | "Obsolete") => {
+    setDocuments(
+      documents.map(d => 
+        d.id === doc.id 
+          ? { ...d, status: newStatus, updatedAt: new Date().toISOString().split('T')[0] } 
+          : d
+      )
+    );
+    
+    const statusMessages = {
+      Draft: "als Entwurf gespeichert",
+      "In Review": "in Überprüfung gesetzt",
+      Approved: "genehmigt",
+      Obsolete: "als veraltet markiert"
+    };
+    
+    toast.success(`Dokument wurde ${statusMessages[newStatus]}`);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -196,10 +303,107 @@ const Documents = () => {
           </p>
         </div>
         
-        <Button onClick={() => toast.info("Create document functionality coming soon")}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Document
-        </Button>
+        <Dialog open={showCreateDocumentDialog} onOpenChange={setShowCreateDocumentDialog}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Document
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Create new document</DialogTitle>
+              <DialogDescription>
+                Add a new document to your quality management system
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={newDocument.title}
+                  onChange={(e) => setNewDocument({...newDocument, title: e.target.value})}
+                  placeholder="Document title"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="type">Document type</Label>
+                  <Select 
+                    value={newDocument.type} 
+                    onValueChange={(value) => setNewDocument({...newDocument, type: value})}
+                  >
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SOP">SOP</SelectItem>
+                      <SelectItem value="Template">Template</SelectItem>
+                      <SelectItem value="Form">Form</SelectItem>
+                      <SelectItem value="Record">Record</SelectItem>
+                      <SelectItem value="Report">Report</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="qmsType">QMS Type</Label>
+                  <Select 
+                    value={newDocument.qmsType} 
+                    onValueChange={(value) => setNewDocument({...newDocument, qmsType: value})}
+                  >
+                    <SelectTrigger id="qmsType">
+                      <SelectValue placeholder="Select QMS type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ISO 9001">ISO 9001</SelectItem>
+                      <SelectItem value="ISO 13485">ISO 13485</SelectItem>
+                      <SelectItem value="HACCP">HACCP</SelectItem>
+                      <SelectItem value="cGMP">cGMP</SelectItem>
+                      <SelectItem value="IEC 62366">IEC 62366</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="project">Project</Label>
+                <Select 
+                  value={newDocument.project} 
+                  onValueChange={(value) => setNewDocument({...newDocument, project: value})}
+                >
+                  <SelectTrigger id="project">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectNames.map((project) => (
+                      <SelectItem key={project} value={project}>
+                        {project}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  value={newDocument.description}
+                  onChange={(e) => setNewDocument({...newDocument, description: e.target.value})}
+                  placeholder="Document description"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCreateDocumentDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateDocument}>
+                Create
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
@@ -336,12 +540,46 @@ const Documents = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="pt-2 flex justify-between border-t">
-                    <Button variant="outline" size="sm" onClick={() => toast.info("View document functionality coming soon")}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDocument(doc)}
+                    >
                       View
                     </Button>
-                    <Button variant="default" size="sm" onClick={() => toast.info("Edit document functionality coming soon")}>
-                      Edit
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" size="sm">
+                          Actions
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Draft")}>
+                          Set to Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "In Review")}>
+                          Set to In Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Approved")}>
+                          Set to Approved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Obsolete")}>
+                          Set to Obsolete
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600" 
+                          onClick={() => handleDeleteDocument(doc)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardFooter>
                 </Card>
               );
@@ -361,7 +599,6 @@ const Documents = () => {
               const DocIcon = getDocumentIcon(doc.type);
               return (
                 <Card key={doc.id} className="overflow-hidden transition-all hover:shadow-md">
-                  {/* Same card content as above */}
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
@@ -398,12 +635,46 @@ const Documents = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="pt-2 flex justify-between border-t">
-                    <Button variant="outline" size="sm" onClick={() => toast.info("View document functionality coming soon")}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDocument(doc)}
+                    >
                       View
                     </Button>
-                    <Button variant="default" size="sm" onClick={() => toast.info("Edit document functionality coming soon")}>
-                      Edit
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" size="sm">
+                          Actions
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Draft")}>
+                          Set to Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "In Review")}>
+                          Set to In Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Approved")}>
+                          Set to Approved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Obsolete")}>
+                          Set to Obsolete
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600" 
+                          onClick={() => handleDeleteDocument(doc)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardFooter>
                 </Card>
               );
@@ -423,7 +694,6 @@ const Documents = () => {
               const DocIcon = getDocumentIcon(doc.type);
               return (
                 <Card key={doc.id} className="overflow-hidden transition-all hover:shadow-md">
-                  {/* Same card content as above */}
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
@@ -460,12 +730,46 @@ const Documents = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="pt-2 flex justify-between border-t">
-                    <Button variant="outline" size="sm" onClick={() => toast.info("View document functionality coming soon")}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDocument(doc)}
+                    >
                       View
                     </Button>
-                    <Button variant="default" size="sm" onClick={() => toast.info("Edit document functionality coming soon")}>
-                      Edit
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" size="sm">
+                          Actions
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Draft")}>
+                          Set to Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "In Review")}>
+                          Set to In Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Approved")}>
+                          Set to Approved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Obsolete")}>
+                          Set to Obsolete
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600" 
+                          onClick={() => handleDeleteDocument(doc)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardFooter>
                 </Card>
               );
@@ -485,7 +789,6 @@ const Documents = () => {
               const DocIcon = getDocumentIcon(doc.type);
               return (
                 <Card key={doc.id} className="overflow-hidden transition-all hover:shadow-md">
-                  {/* Same card content as above */}
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
@@ -522,12 +825,46 @@ const Documents = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="pt-2 flex justify-between border-t">
-                    <Button variant="outline" size="sm" onClick={() => toast.info("View document functionality coming soon")}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewDocument(doc)}
+                    >
                       View
                     </Button>
-                    <Button variant="default" size="sm" onClick={() => toast.info("Edit document functionality coming soon")}>
-                      Edit
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" size="sm">
+                          Actions
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditDocument(doc)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Draft")}>
+                          Set to Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "In Review")}>
+                          Set to In Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Approved")}>
+                          Set to Approved
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeStatus(doc, "Obsolete")}>
+                          Set to Obsolete
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600" 
+                          onClick={() => handleDeleteDocument(doc)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardFooter>
                 </Card>
               );
