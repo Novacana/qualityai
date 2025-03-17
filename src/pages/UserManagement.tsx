@@ -1,25 +1,26 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import UserFilters from "@/components/user-management/UserFilters";
 import UserList from "@/components/user-management/UserList";
 import { mockUsers } from "@/components/user-management/mock-data";
 import { User } from "@/components/user-management/types";
+import CreateUserDialog from "@/components/user-management/CreateUserDialog";
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
+  const [users, setUsers] = useState(mockUsers);
   
   // Get unique roles and departments for filtering
-  const roles = Array.from(new Set(mockUsers.map(user => user.role)));
-  const statuses = Array.from(new Set(mockUsers.map(user => user.status)));
+  const roles = Array.from(new Set(users.map(user => user.role)));
+  const departments = Array.from(new Set(users.map(user => user.department).filter(Boolean)));
+  const statuses = Array.from(new Set(users.map(user => user.status)));
   
   // Filter users based on search term, role, status, and inactive toggle
-  const filteredUsers = mockUsers.filter(user => 
+  const filteredUsers = users.filter(user => 
     (searchTerm === "" || 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,11 +30,16 @@ const UserManagement = () => {
     (showInactiveUsers || user.status !== "Inactive")
   );
 
-  const handleAddUser = () => {
-    toast.info("Neuer Benutzer wird angelegt...");
-    setTimeout(() => {
-      toast.success("Benutzer wurde erfolgreich angelegt");
-    }, 1500);
+  const handleCreateUser = (newUserData: Omit<User, "id" | "lastLogin" | "avatar">) => {
+    // In a real app, this would be an API call
+    const newUser: User = {
+      ...newUserData,
+      id: `user-${users.length + 1}`,
+      lastLogin: "Never",
+    };
+    
+    setUsers([newUser, ...users]);
+    toast.success("User created successfully");
   };
 
   return (
@@ -46,10 +52,11 @@ const UserManagement = () => {
           </p>
         </div>
         
-        <Button onClick={handleAddUser}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add User
-        </Button>
+        <CreateUserDialog 
+          onCreateUser={handleCreateUser}
+          roles={roles}
+          departments={departments}
+        />
       </div>
       
       <UserFilters 
