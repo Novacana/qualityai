@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Database, Link, Server, Lock, CheckCircle2, AlertTriangle, RefreshCcw, CheckSquare, X } from "lucide-react";
 import { toast } from "sonner";
+
+type SyncDirection = 'qmsToRSpace' | 'rSpaceToQMS';
 
 const RSpaceIntegration = () => {
   const [apiUrl, setApiUrl] = useState("https://rspace.leibniz-inm.de/api/v1");
@@ -48,7 +49,7 @@ const RSpaceIntegration = () => {
     toast.success("Integrationseinstellungen wurden gespeichert");
   };
 
-  const toggleSyncSetting = (direction: 'qmsToRSpace' | 'rSpaceToQMS', setting: string) => {
+  const toggleSyncSetting = (direction: SyncDirection, setting: string) => {
     setSyncSettings(prev => ({
       ...prev,
       [direction]: {
