@@ -5,20 +5,32 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Download, FileText, Eye, Trash, FileEdit, Pencil } from "lucide-react";
 import { useState } from "react";
-import { Template } from "./types";
+import { Template, TemplateCategory } from "./types";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { generateSOPDocument, getOpenAIKey } from "@/utils/openai";
 
-interface TemplateCardProps extends React.HTMLAttributes<HTMLDivElement> {
+// Fix the interface by removing the HTMLAttributes extension and defining all props explicitly
+interface TemplateCardProps {
   template: Template;
-  onSelect?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  templateCategories?: TemplateCategory[];
+  onDownload?: (template: Template) => void;
+  onDelete?: (template: Template) => void;
+  onStatusChange?: (template: Template, newStatus: 'draft' | 'published' | 'archived') => void;
   onEdit?: (template: Template) => void;
+  className?: string;
 }
 
-export function TemplateCard({ template, onSelect, onDelete, onEdit, className, ...props }: TemplateCardProps) {
+export function TemplateCard({ 
+  template, 
+  templateCategories, 
+  onDownload, 
+  onDelete, 
+  onStatusChange,
+  onEdit, 
+  className 
+}: TemplateCardProps) {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -82,11 +94,16 @@ export function TemplateCard({ template, onSelect, onDelete, onEdit, className, 
     URL.revokeObjectURL(url);
     
     toast.success("Dokument heruntergeladen");
+    
+    // Call the onDownload prop if provided
+    if (onDownload) {
+      onDownload(template);
+    }
   };
 
   return (
     <>
-      <Card className={cn("overflow-hidden transition-all hover:border-primary/50", className)} {...props}>
+      <Card className={cn("overflow-hidden transition-all hover:border-primary/50", className)}>
         <CardHeader className="p-4">
           <div className="flex items-start justify-between">
             <CardTitle className="text-lg text-left">{title}</CardTitle>
@@ -162,7 +179,7 @@ export function TemplateCard({ template, onSelect, onDelete, onEdit, className, 
               </Button>
             )}
             {onDelete && (
-              <Button size="sm" variant="outline" className="text-destructive" onClick={() => onDelete(id)}>
+              <Button size="sm" variant="outline" className="text-destructive" onClick={() => onDelete(template)}>
                 <Trash className="h-4 w-4" />
               </Button>
             )}
