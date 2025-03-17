@@ -22,6 +22,21 @@ import {
 import { Plus, Mail, User, Phone, Building } from "lucide-react";
 import { toast } from "sonner";
 import { User as UserType } from "./types";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Create a schema for the form
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email"),
+  phone: z.string().optional(),
+  role: z.string(),
+  department: z.string().min(2, "Department must be at least 2 characters"),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface CreateUserDialogProps {
   onCreateUser: (user: Omit<UserType, "id" | "lastLogin" | "avatar">) => void;
@@ -35,38 +50,26 @@ const CreateUserDialog = ({
   departments
 }: CreateUserDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [newUser, setNewUser] = useState<Omit<UserType, "id" | "lastLogin" | "avatar">>({
-    name: '',
-    email: '',
-    phone: '',
-    role: "Viewer",
-    status: "Pending",
-    department: '',
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      role: "Viewer",
+      department: "",
+    },
   });
 
-  const handleCreate = () => {
-    if (!newUser.name || !newUser.email || !newUser.department || !newUser.role) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newUser.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    onCreateUser(newUser);
-    setOpen(false);
-    setNewUser({
-      name: '',
-      email: '',
-      phone: '',
-      role: "Viewer",
+  const handleCreate = (values: FormValues) => {
+    onCreateUser({
+      ...values,
       status: "Pending",
-      department: '',
     });
+    setOpen(false);
+    form.reset();
+    toast.success(`User ${values.name} created successfully`);
   };
 
   return (
@@ -84,89 +87,134 @@ const CreateUserDialog = ({
             Add a new user to the system. They will receive an email with login instructions.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Full Name</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="name"
-                className="pl-10"
-                value={newUser.name}
-                onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                placeholder="John Doe"
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        className="pl-10"
+                        placeholder="John Doe"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        className="pl-10"
+                        type="email"
+                        placeholder="john.doe@example.com"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number (Optional)</FormLabel>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        className="pl-10"
+                        placeholder="+1 (555) 123-4567"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          className="pl-10"
+                          placeholder="Research & Development"
+                          {...field}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email Address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                className="pl-10"
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                placeholder="john.doe@example.com"
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Phone Number (Optional)</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="phone"
-                className="pl-10"
-                value={newUser.phone}
-                onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                value={newUser.role} 
-                onValueChange={(value) => setNewUser({...newUser, role: value as UserType["role"]})}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="department">Department</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="department"
-                  className="pl-10"
-                  value={newUser.department}
-                  onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                  placeholder="Research & Development"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} type="submit">
-            Create User
-          </Button>
-        </DialogFooter>
+            
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Create User
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
