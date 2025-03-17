@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Template } from "./types";
 import { Download, FileText, Eye, Trash, Pencil } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
-import { getOpenAIKey } from "@/utils/openai";
 import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
+import { useTemplateGeneration } from "@/hooks/useTemplateGeneration";
 
 interface TemplateActionsProps {
   template: Template;
@@ -21,32 +20,15 @@ export function TemplateActions({
   onEdit 
 }: TemplateActionsProps) {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { isGenerating, checkOpenAIKey } = useTemplateGeneration();
   
   const handleView = () => {
     setViewDialogOpen(true);
   };
 
   const handleGenerate = async () => {
-    if (!getOpenAIKey()) {
-      toast.error("Bitte konfigurieren Sie zuerst Ihren OpenAI API Key", {
-        description: "Gehen Sie zu Einstellungen in der QMS Auswahl",
-        action: {
-          label: "Zu QMS Auswahl",
-          onClick: () => {
-            window.location.href = "/QMSSelection";
-          }
-        }
-      });
-      return;
-    }
-    
-    setIsGenerating(true);
-    try {
-      // We'll just open the dialog where the actual generation will happen
+    if (checkOpenAIKey()) {
       setViewDialogOpen(true);
-    } finally {
-      setIsGenerating(false);
     }
   };
 

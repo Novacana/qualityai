@@ -4,9 +4,8 @@ import { Download, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Template } from "./types";
-import { useState } from "react";
-import { toast } from "sonner";
-import { generateSOPDocument, getOpenAIKey } from "@/utils/openai";
+import { useEffect } from "react";
+import { useTemplateGeneration } from "@/hooks/useTemplateGeneration";
 
 interface TemplatePreviewDialogProps {
   template: Template;
@@ -21,60 +20,31 @@ export function TemplatePreviewDialog({
   onOpenChange, 
   onDownload 
 }: TemplatePreviewDialogProps) {
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { 
+    generatedContent, 
+    setGeneratedContent, 
+    isGenerating, 
+    generateDocument, 
+    downloadDocument 
+  } = useTemplateGeneration();
+  
+  // Clear generated content when dialog is closed
+  useEffect(() => {
+    if (!open) {
+      setGeneratedContent(null);
+    }
+  }, [open, setGeneratedContent]);
   
   const handleGenerate = async () => {
-    if (!getOpenAIKey()) {
-      toast.error("Bitte konfigurieren Sie zuerst Ihren OpenAI API Key", {
-        description: "Gehen Sie zu Einstellungen in der QMS Auswahl",
-        action: {
-          label: "Zu QMS Auswahl",
-          onClick: () => {
-            window.location.href = "/QMSSelection";
-          }
-        }
-      });
-      return;
-    }
-    
-    setIsGenerating(true);
-    try {
-      const content = await generateSOPDocument(template);
-      setGeneratedContent(content);
-      toast.success("SOP-Dokument erfolgreich generiert");
-    } catch (error) {
-      console.error("Error generating document:", error);
-      toast.error("Fehler bei der Dokumentgenerierung", { 
-        description: (error as Error).message 
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+    await generateDocument(template);
   };
 
   const handleDownload = () => {
     if (!generatedContent) {
-      toast.error("Bitte generieren Sie zuerst das Dokument");
       return;
     }
     
-    const blob = new Blob([generatedContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${template.title.replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success("Dokument heruntergeladen");
-    
-    // Call the onDownload prop if provided
-    if (onDownload) {
-      onDownload(template);
-    }
+    downloadDocument(template, generatedContent, onDownload);
   };
   
   return (
