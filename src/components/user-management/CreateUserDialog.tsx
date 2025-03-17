@@ -32,7 +32,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
   phone: z.string().optional(),
-  role: z.string(),
+  role: z.enum(["Admin", "QMS Manager", "Project Lead", "Researcher", "Viewer"]),
   department: z.string().min(2, "Department must be at least 2 characters"),
 });
 
