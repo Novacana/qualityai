@@ -4,8 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Filter, ArrowUpDown, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import ProjectCard from "@/components/dashboard/ProjectCard";
 
 interface Project {
   id: string;
@@ -15,10 +25,19 @@ interface Project {
   status: "Active" | "Pending" | "Completed";
   updatedAt: string;
   createdBy: string;
+  progress?: number;
+  team?: {
+    name: string;
+    avatar?: string;
+  }[];
 }
 
 const Projects = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [qmsFilter, setQmsFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "updatedAt" | "status">("updatedAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   
   // Mock projects data
   const projects: Project[] = [
@@ -29,7 +48,14 @@ const Projects = () => {
       qmsType: "ISO 9001",
       status: "Active",
       updatedAt: "2023-08-15",
-      createdBy: "Dr. Alex Johnson"
+      createdBy: "Dr. Alex Johnson",
+      progress: 65,
+      team: [
+        { name: "Alex Johnson", avatar: "/placeholder.svg" },
+        { name: "Maria Garcia", avatar: "/placeholder.svg" },
+        { name: "James Wilson", avatar: "/placeholder.svg" },
+        { name: "Sarah Lee", avatar: "/placeholder.svg" }
+      ]
     },
     {
       id: "P-002",
@@ -38,7 +64,13 @@ const Projects = () => {
       qmsType: "ISO 13485",
       status: "Active",
       updatedAt: "2023-09-02",
-      createdBy: "Dr. Sarah Williams"
+      createdBy: "Dr. Sarah Williams",
+      progress: 42,
+      team: [
+        { name: "Sarah Williams", avatar: "/placeholder.svg" },
+        { name: "Michael Brown", avatar: "/placeholder.svg" },
+        { name: "Emily Chen", avatar: "/placeholder.svg" }
+      ]
     },
     {
       id: "P-003",
@@ -47,7 +79,12 @@ const Projects = () => {
       qmsType: "HACCP",
       status: "Active",
       updatedAt: "2023-07-30",
-      createdBy: "Dr. Jennifer Lee"
+      createdBy: "Dr. Jennifer Lee",
+      progress: 78,
+      team: [
+        { name: "Jennifer Lee", avatar: "/placeholder.svg" },
+        { name: "Robert Kim", avatar: "/placeholder.svg" }
+      ]
     },
     {
       id: "P-004",
@@ -56,7 +93,13 @@ const Projects = () => {
       qmsType: "cGMP",
       status: "Pending",
       updatedAt: "2023-08-25",
-      createdBy: "Dr. James Taylor"
+      createdBy: "Dr. James Taylor",
+      progress: 23,
+      team: [
+        { name: "James Taylor", avatar: "/placeholder.svg" },
+        { name: "Lisa Wang", avatar: "/placeholder.svg" },
+        { name: "David Smith", avatar: "/placeholder.svg" }
+      ]
     },
     {
       id: "P-005",
@@ -65,7 +108,12 @@ const Projects = () => {
       qmsType: "ISO 13485",
       status: "Completed",
       updatedAt: "2023-06-10",
-      createdBy: "Dr. Daniel Anderson"
+      createdBy: "Dr. Daniel Anderson",
+      progress: 100,
+      team: [
+        { name: "Daniel Anderson", avatar: "/placeholder.svg" },
+        { name: "Rachel Green", avatar: "/placeholder.svg" }
+      ]
     },
     {
       id: "P-006",
@@ -74,16 +122,57 @@ const Projects = () => {
       qmsType: "ISO 9001",
       status: "Active",
       updatedAt: "2023-09-10",
-      createdBy: "Dr. Robert Brown"
+      createdBy: "Dr. Robert Brown",
+      progress: 51,
+      team: [
+        { name: "Robert Brown", avatar: "/placeholder.svg" },
+        { name: "Sophia Martinez", avatar: "/placeholder.svg" },
+        { name: "Thomas Young", avatar: "/placeholder.svg" },
+        { name: "Amanda Park", avatar: "/placeholder.svg" }
+      ]
     }
   ];
   
-  // Filter projects based on search term
-  const filteredProjects = projects.filter(project => 
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.qmsType.toLowerCase().includes(searchTerm.toLowerCase())
+  // Get unique QMS types for filtering
+  const qmsTypes = Array.from(new Set(projects.map(project => project.qmsType)));
+  
+  // Filter projects based on search term, status, and QMS type
+  let filteredProjects = projects.filter(project => 
+    (searchTerm === "" || 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.qmsType.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (statusFilter === null || project.status === statusFilter) &&
+    (qmsFilter === null || project.qmsType === qmsFilter)
   );
+  
+  // Sort projects
+  filteredProjects = filteredProjects.sort((a, b) => {
+    if (sortBy === "name") {
+      return sortDirection === "asc" 
+        ? a.name.localeCompare(b.name) 
+        : b.name.localeCompare(a.name);
+    } else if (sortBy === "updatedAt") {
+      return sortDirection === "asc" 
+        ? new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime() 
+        : new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    } else if (sortBy === "status") {
+      return sortDirection === "asc" 
+        ? a.status.localeCompare(b.status) 
+        : b.status.localeCompare(a.status);
+    }
+    return 0;
+  });
+  
+  // Toggle sort direction and update sort field
+  const handleSort = (field: "name" | "updatedAt" | "status") => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDirection("asc");
+    }
+  };
   
   // Determine badge color based on status
   const getBadgeVariant = (status: string) => {
@@ -127,12 +216,79 @@ const Projects = () => {
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <ArrowUpDown className="h-4 w-4" />
-          </Button>
+          {/* QMS Type Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center space-x-1">
+                <Filter className="h-4 w-4 mr-1" />
+                <span>{qmsFilter || "QMS Type"}</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Filter by QMS Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setQmsFilter(null)}>
+                All Types
+              </DropdownMenuItem>
+              {qmsTypes.map((type) => (
+                <DropdownMenuItem key={type} onClick={() => setQmsFilter(type)}>
+                  {type}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Status Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center space-x-1">
+                <Filter className="h-4 w-4 mr-1" />
+                <span>{statusFilter || "Status"}</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                All Statuses
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("Active")}>
+                Active
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("Pending")}>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("Completed")}>
+                Completed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Sort Options */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <ArrowUpDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => handleSort("name")}>
+                  Name {sortBy === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSort("updatedAt")}>
+                  Last Updated {sortBy === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSort("status")}>
+                  Status {sortBy === "status" && (sortDirection === "asc" ? "↑" : "↓")}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
