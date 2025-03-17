@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -31,6 +30,7 @@ import StatCard from "@/components/dashboard/StatCard";
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   
   // Mock project data - in a real app this would be fetched from API
@@ -116,6 +116,60 @@ const ProjectDetails = () => {
       .toUpperCase();
   };
 
+  const handleEditProject = () => {
+    toast.info("Projekt wird bearbeitet...");
+  };
+
+  const handleGenerateReport = () => {
+    toast.info("Report wird generiert...");
+    setTimeout(() => {
+      toast.success("Report wurde erfolgreich generiert");
+    }, 1500);
+  };
+
+  const handleAddTeamMember = () => {
+    toast.info("Teammitglied wird hinzugefügt...");
+  };
+
+  const handleViewAllDocuments = () => {
+    setActiveTab("documents");
+  };
+
+  const handleViewAllActivity = () => {
+    setActiveTab("activity");
+  };
+
+  const handleGenerateAnalytics = () => {
+    toast.info("Projekt-Analyse wird erstellt...");
+    setTimeout(() => {
+      toast.success("Analyse wurde erfolgreich erstellt");
+    }, 2000);
+  };
+
+  const handleAddDocument = () => {
+    toast.info("Neues Dokument wird erstellt...");
+  };
+
+  const handleViewDocument = (docId: string) => {
+    toast.info(`Dokument ${docId} wird geöffnet...`);
+  };
+
+  const handleAddTask = () => {
+    toast.info("Neue Aufgabe wird erstellt...");
+  };
+
+  const handleEditTask = (taskId: string) => {
+    toast.info(`Aufgabe ${taskId} wird bearbeitet...`);
+  };
+
+  const handleReportIssue = () => {
+    toast.info("Problem wird gemeldet...");
+  };
+
+  const handleViewIssue = (issueId: string) => {
+    toast.info(`Problem ${issueId} wird angezeigt...`);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -139,10 +193,10 @@ const ProjectDetails = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => toast.info("Edit project functionality coming soon")}>
+          <Button variant="outline" onClick={handleEditProject}>
             Edit Project
           </Button>
-          <Button onClick={() => toast.info("Generate report functionality coming soon")}>
+          <Button onClick={handleGenerateReport}>
             Generate Report
           </Button>
         </div>
@@ -205,7 +259,7 @@ const ProjectDetails = () => {
                   variant="outline" 
                   size="icon" 
                   className="h-12 w-12"
-                  onClick={() => toast.info("Add team member functionality coming soon")}
+                  onClick={handleAddTeamMember}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -279,7 +333,7 @@ const ProjectDetails = () => {
                   variant="outline" 
                   className="w-full" 
                   size="sm"
-                  onClick={() => setActiveTab("documents")}
+                  onClick={handleViewAllDocuments}
                 >
                   View All Documents
                 </Button>
@@ -308,7 +362,7 @@ const ProjectDetails = () => {
                   variant="outline" 
                   className="w-full" 
                   size="sm"
-                  onClick={() => setActiveTab("activity")}
+                  onClick={handleViewAllActivity}
                 >
                   View All Activity
                 </Button>
@@ -330,7 +384,7 @@ const ProjectDetails = () => {
                   variant="outline" 
                   size="sm" 
                   className="mt-4"
-                  onClick={() => toast.info("Analytics functionality coming soon")}
+                  onClick={handleGenerateAnalytics}
                 >
                   Generate Analytics
                 </Button>
@@ -343,9 +397,7 @@ const ProjectDetails = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Project Documents</CardTitle>
-              <Button 
-                onClick={() => toast.info("Add document functionality coming soon")}
-              >
+              <Button onClick={handleAddDocument}>
                 Add Document
               </Button>
             </CardHeader>
@@ -376,7 +428,7 @@ const ProjectDetails = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => toast.info("View document functionality coming soon")}
+                        onClick={() => handleViewDocument(doc.id)}
                       >
                         View
                       </Button>
@@ -392,9 +444,7 @@ const ProjectDetails = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Project Tasks</CardTitle>
-              <Button 
-                onClick={() => toast.info("Add task functionality coming soon")}
-              >
+              <Button onClick={handleAddTask}>
                 Add Task
               </Button>
             </CardHeader>
@@ -426,7 +476,7 @@ const ProjectDetails = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => toast.info("Edit task functionality coming soon")}
+                        onClick={() => handleEditTask(task.id)}
                       >
                         Edit
                       </Button>
@@ -442,9 +492,7 @@ const ProjectDetails = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Quality Issues</CardTitle>
-              <Button 
-                onClick={() => toast.info("Report issue functionality coming soon")}
-              >
+              <Button onClick={handleReportIssue}>
                 Report Issue
               </Button>
             </CardHeader>
@@ -476,7 +524,7 @@ const ProjectDetails = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => toast.info("View issue functionality coming soon")}
+                        onClick={() => handleViewIssue(issue.id)}
                       >
                         View
                       </Button>

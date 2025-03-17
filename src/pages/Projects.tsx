@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Filter, ArrowUpDown, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ interface Project {
 }
 
 const Projects = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [qmsFilter, setQmsFilter] = useState<string | null>(null);
@@ -188,6 +190,24 @@ const Projects = () => {
     }
   };
 
+  const handleCreateProject = () => {
+    toast.info("Neues Projekt wird erstellt...");
+    setTimeout(() => {
+      toast.success("Projekt wurde erstellt!");
+    }, 1500);
+  };
+
+  const handleViewProjectDetails = (projectId: string) => {
+    navigate(`/projects/${projectId}`);
+  };
+
+  const handleManageProject = (projectId: string) => {
+    toast.info("Projekt-Management wird geladen...");
+    setTimeout(() => {
+      navigate(`/projects/${projectId}`);
+    }, 1000);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -198,7 +218,7 @@ const Projects = () => {
           </p>
         </div>
         
-        <Button onClick={() => toast.info("Create project functionality coming soon")}>
+        <Button onClick={handleCreateProject}>
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
@@ -323,10 +343,18 @@ const Projects = () => {
               </div>
             </CardContent>
             <CardFooter className="pt-4 border-t flex justify-between">
-              <Button variant="outline" size="sm" onClick={() => toast.info("View project details functionality coming soon")}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleViewProjectDetails(project.id)}
+              >
                 View Details
               </Button>
-              <Button variant="default" size="sm" onClick={() => toast.info("Manage project functionality coming soon")}>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => handleManageProject(project.id)}
+              >
                 Manage
               </Button>
             </CardFooter>

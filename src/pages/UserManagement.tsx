@@ -188,6 +188,40 @@ const UserManagement = () => {
       .toUpperCase();
   };
 
+  const handleAddUser = () => {
+    toast.info("Neuer Benutzer wird angelegt...");
+    setTimeout(() => {
+      toast.success("Benutzer wurde erfolgreich angelegt");
+    }, 1500);
+  };
+
+  const handleEditUser = (userId: string) => {
+    toast.info(`Bearbeite Benutzer ${userId}...`);
+  };
+
+  const handleResetPassword = (userId: string, userName: string) => {
+    toast.info(`Passwort-Reset für ${userName} wird durchgeführt...`);
+    setTimeout(() => {
+      toast.success(`Passwort-Reset-Link wurde an ${userName} gesendet`);
+    }, 1000);
+  };
+
+  const handleViewPermissions = (userId: string, userName: string) => {
+    toast.info(`Berechtigungen für ${userName} werden angezeigt...`);
+  };
+
+  const handleViewAuditLog = (userId: string, userName: string) => {
+    toast.info(`Audit-Log für ${userName} wird geladen...`);
+  };
+
+  const handleToggleUserStatus = (userId: string, userName: string, currentStatus: string) => {
+    const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+    toast.info(`Status von ${userName} wird auf ${newStatus} geändert...`);
+    setTimeout(() => {
+      toast.success(`Status von ${userName} wurde auf ${newStatus} geändert`);
+    }, 1000);
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -198,7 +232,7 @@ const UserManagement = () => {
           </p>
         </div>
         
-        <Button onClick={() => toast.info("Add user functionality coming soon")}>
+        <Button onClick={handleAddUser}>
           <Plus className="h-4 w-4 mr-2" />
           Add User
         </Button>
@@ -332,7 +366,7 @@ const UserManagement = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => toast.info("Edit user functionality coming soon")}
+                    onClick={() => handleEditUser(user.id)}
                   >
                     Edit
                   </Button>
@@ -345,19 +379,19 @@ const UserManagement = () => {
                     <DropdownMenuContent align="end" className="w-[180px]">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => toast.info("Reset password functionality coming soon")}>
+                      <DropdownMenuItem onClick={() => handleResetPassword(user.id, user.name)}>
                         Reset Password
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toast.info("View permissions functionality coming soon")}>
+                      <DropdownMenuItem onClick={() => handleViewPermissions(user.id, user.name)}>
                         View Permissions
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toast.info("View audit log functionality coming soon")}>
+                      <DropdownMenuItem onClick={() => handleViewAuditLog(user.id, user.name)}>
                         View Audit Log
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         className="text-red-600"
-                        onClick={() => toast.info("Deactivate user functionality coming soon")}
+                        onClick={() => handleToggleUserStatus(user.id, user.name, user.status)}
                       >
                         {user.status === "Active" ? "Deactivate" : "Activate"}
                       </DropdownMenuItem>

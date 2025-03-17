@@ -54,7 +54,8 @@ const RSpaceIntegration = () => {
   const handleRegenerateApiKey = () => {
     toast.info("Neuer API-Schlüssel wird generiert...");
     setTimeout(() => {
-      setApiKey("••••••••••••••••••••••");
+      const newKey = "rs_" + Math.random().toString(36).substring(2, 15);
+      setApiKey(newKey);
       toast.success("Neuer API-Schlüssel wurde generiert und gespeichert");
     }, 1000);
   };
@@ -68,7 +69,7 @@ const RSpaceIntegration = () => {
       ...prev,
       [direction]: {
         ...prev[direction],
-        [setting]: !prev[direction][setting as keyof typeof prev[direction]]
+        [setting]: !prev[direction][setting as keyof typeof prev[typeof direction]]
       }
     }));
   };
@@ -309,7 +310,7 @@ const RSpaceIntegration = () => {
             </div>
             
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline">Abbrechen</Button>
+              <Button variant="outline" onClick={() => toast.info("Änderungen verworfen")}>Abbrechen</Button>
               <Button onClick={handleSaveSettings}>Einstellungen speichern</Button>
             </div>
           </div>
