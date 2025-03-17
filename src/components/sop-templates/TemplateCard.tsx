@@ -1,173 +1,230 @@
 
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Download, FileText, Eye, Trash, FileEdit, Pencil } from "lucide-react";
+import { useState } from "react";
+import { Template } from "./types";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Template, TemplateCategory } from "./types";
-import { 
-  BookOpen, 
-  CheckSquare, 
-  ChevronDown, 
-  Download, 
-  FileCheck, 
-  FileSpreadsheet, 
-  FileText,
-  Tag 
-} from "lucide-react";
+import { generateSOPDocument, getOpenAIKey } from "@/utils/openai";
 
-interface TemplateCardProps {
+interface TemplateCardProps extends React.HTMLAttributes<HTMLDivElement> {
   template: Template;
-  templateCategories: TemplateCategory[];
-  onDownload: (template: Template) => void;
-  onDelete: (template: Template) => void;
-  onStatusChange: (template: Template, newStatus: 'draft' | 'published' | 'archived') => void;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (template: Template) => void;
 }
 
-// Helper function to get the icon based on the document type
-const getTemplateIcon = (type: string) => {
-  switch (type) {
-    case "Documentation":
-      return BookOpen;
-    case "Procedure":
-      return FileCheck;
-    case "Form":
-      return FileSpreadsheet;
-    case "Checklist":
-      return CheckSquare;
-    default:
-      return FileText;
-  }
-};
+export function TemplateCard({ template, onSelect, onDelete, onEdit, className, ...props }: TemplateCardProps) {
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const { id, title, description, category, type, updated, downloads, status, tags } = template;
+  
+  const statusColorMap: Record<string, string> = {
+    draft: "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20",
+    published: "text-green-500 bg-green-500/10 hover:bg-green-500/20",
+    archived: "text-gray-500 bg-gray-500/10 hover:bg-gray-500/20",
+  };
 
-const getStatusBadgeVariant = (status?: string) => {
-  switch (status) {
-    case "published":
-      return "success";
-    case "draft":
-      return "warning";
-    case "archived":
-      return "secondary";
-    default:
-      return "outline";
-  }
-};
+  const handleView = () => {
+    setViewDialogOpen(true);
+  };
 
-export const TemplateCard = ({ 
-  template, 
-  templateCategories, 
-  onDownload, 
-  onDelete, 
-  onStatusChange 
-}: TemplateCardProps) => {
-  const Icon = getTemplateIcon(template.type);
+  const handleGenerate = async () => {
+    if (!getOpenAIKey()) {
+      toast.error("Bitte konfigurieren Sie zuerst Ihren OpenAI API Key", {
+        description: "Gehen Sie zu Einstellungen in der QMS Auswahl",
+        action: {
+          label: "Zu QMS Auswahl",
+          onClick: () => {
+            window.location.href = "/QMSSelection";
+          }
+        }
+      });
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      const content = await generateSOPDocument(template);
+      setGeneratedContent(content);
+      setViewDialogOpen(true);
+      toast.success("SOP-Dokument erfolgreich generiert");
+    } catch (error) {
+      console.error("Error generating document:", error);
+      toast.error("Fehler bei der Dokumentgenerierung", { 
+        description: (error as Error).message 
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!generatedContent) {
+      toast.error("Bitte generieren Sie zuerst das Dokument");
+      return;
+    }
+    
+    const blob = new Blob([generatedContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/\s+/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Dokument heruntergeladen");
+  };
 
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-medium">
-            {template.title}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {template.status && (
-              <Badge variant={getStatusBadgeVariant(template.status) as any}>
-                {template.status === 'published' ? 'Veröffentlicht' : 
-                 template.status === 'draft' ? 'Entwurf' : 'Archiviert'}
+    <>
+      <Card className={cn("overflow-hidden transition-all hover:border-primary/50", className)} {...props}>
+        <CardHeader className="p-4">
+          <div className="flex items-start justify-between">
+            <CardTitle className="text-lg text-left">{title}</CardTitle>
+            {status && (
+              <Badge variant="outline" className={statusColorMap[status]}>
+                {status === "draft" && "Entwurf"}
+                {status === "published" && "Veröffentlicht"}
+                {status === "archived" && "Archiviert"}
               </Badge>
             )}
-            <Badge variant="outline">
-              {template.type === 'Documentation' ? 'Dokumentation' :
-               template.type === 'Procedure' ? 'Verfahren' :
-               template.type === 'Form' ? 'Formular' : 'Checkliste'}
-            </Badge>
           </div>
-        </div>
-        <CardDescription className="line-clamp-2">
-          {template.description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pb-2">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Icon className="mr-1.5 h-4 w-4" />
-          <span>Aktualisiert: {template.updated}</span>
-          <span className="mx-1.5">•</span>
-          <span>{template.downloads} Downloads</span>
-        </div>
-        {template.tags && template.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {template.tags.map((tag, idx) => (
-              <div key={idx} className="text-xs flex items-center bg-muted rounded-full px-2 py-0.5">
-                <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                {tag}
-              </div>
-            ))}
+          <CardDescription className="text-left">{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 grid gap-2">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Kategorie</p>
+              <p className="font-medium">{category}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Typ</p>
+              <p className="font-medium">{type}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Aktualisiert</p>
+              <p className="font-medium">{updated}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Downloads</p>
+              <p className="font-medium">{downloads}</p>
+            </div>
           </div>
-        )}
-      </CardContent>
-      <CardFooter className="pt-2 flex justify-between border-t">
-        <Badge variant="secondary">
-          {templateCategories.find(cat => cat.id === template.category)?.name}
-        </Badge>
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onDownload(template)}
-          >
-            <Download className="mr-1.5 h-4 w-4" />
-            Download
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <ChevronDown className="h-4 w-4" />
+
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="p-4 border-t bg-muted/20 flex justify-between">
+          <div className="flex space-x-2">
+            <Button size="sm" variant="outline" onClick={handleView}>
+              <Eye className="h-4 w-4 mr-1" />
+              Ansicht
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleGenerate}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>
+                  <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Generiere...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-1" />
+                  Generieren
+                </>
+              )}
+            </Button>
+          </div>
+          <div className="flex space-x-2">
+            {onEdit && (
+              <Button size="sm" variant="outline" onClick={() => onEdit(template)}>
+                <Pencil className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.info("Vorschaufunktion kommt bald")}>
-                Vorschau
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast.info("Bearbeitungsfunktion kommt bald")}>
-                Bearbeiten
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onStatusChange(template, 'published')}>
-                Veröffentlichen
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange(template, 'draft')}>
-                Als Entwurf speichern
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange(template, 'archived')}>
-                Archivieren
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-red-600"
-                onClick={() => onDelete(template)}
-              >
-                Löschen
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardFooter>
-    </Card>
+            )}
+            {onDelete && (
+              <Button size="sm" variant="outline" className="text-destructive" onClick={() => onDelete(id)}>
+                <Trash className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>
+              {category} - {type}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-grow border rounded-md p-4 my-4">
+            {generatedContent ? (
+              <div className="whitespace-pre-wrap">
+                {generatedContent}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <FileText className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-medium">Kein Inhalt generiert</h3>
+                <p className="text-muted-foreground mt-2">
+                  Klicken Sie auf "Generieren", um einen Inhalt für diese Vorlage zu erstellen.
+                </p>
+                <Button 
+                  className="mt-4" 
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Generiere...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generieren
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </ScrollArea>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Schließen
+            </Button>
+            {generatedContent && (
+              <Button onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Herunterladen
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
-};
+}

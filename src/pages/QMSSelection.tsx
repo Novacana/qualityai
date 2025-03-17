@@ -1,6 +1,5 @@
-
-import { useState } from 'react';
-import { Check, Shield, Clipboard, HeartPulse, Beaker, FileCheck, FolderCheck, Bot, Send } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Check, Shield, Clipboard, HeartPulse, Beaker, FileCheck, FolderCheck, Bot, Send, Key } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import QMSCard from '@/components/ui/QMSCard';
 import { toast } from "sonner";
+import { OpenAIConfig } from "@/components/settings/OpenAIConfig";
+import { generateQMSAdvice, getOpenAIKey } from "@/utils/openai";
 
 interface Message {
   content: string;
@@ -28,6 +29,8 @@ const QMSSelection = () => {
       timestamp: new Date()
     }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   const handleSelectQMS = (qmsType: string) => {
     setSelectedQMS(qmsType);
@@ -62,8 +65,21 @@ const QMSSelection = () => {
     setRegulationNeeds('');
   };
 
-  const handleSendMessage = () => {
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  const handleSendMessage = async () => {
     if (!chatMessage.trim()) return;
+    
+    // Check if OpenAI API key is set
+    const hasApiKey = !!getOpenAIKey();
 
     const userMessage: Message = {
       content: chatMessage,
@@ -71,26 +87,33 @@ const QMSSelection = () => {
       timestamp: new Date()
     };
 
-    setChatHistory([...chatHistory, userMessage]);
+    setChatHistory((prev) => [...prev, userMessage]);
     setChatMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response based on keywords
-    setTimeout(() => {
+    try {
       let responseContent = '';
-      const lowerCaseMessage = chatMessage.toLowerCase();
-
-      if (lowerCaseMessage.includes('medizinprodukt') || lowerCaseMessage.includes('medical device')) {
-        responseContent = "Für Medizinprodukte empfehle ich die ISO 13485. Diese Norm ist speziell für Qualitätsmanagementsysteme im Bereich der Medizinprodukte konzipiert und bietet die notwendigen Anforderungen für regulatorische Zwecke.";
-      } else if (lowerCaseMessage.includes('pharma') || lowerCaseMessage.includes('arzneimittel')) {
-        responseContent = "Für pharmazeutische Forschung empfehle ich cGMP (Current Good Manufacturing Practice). Dies ist der goldene Standard für die Herstellung und Qualitätskontrolle von Arzneimitteln.";
-      } else if (lowerCaseMessage.includes('lebensmittel') || lowerCaseMessage.includes('food')) {
-        responseContent = "Für Forschung im Bereich Lebensmittel oder Lebensmittelkontaktmaterialien empfehle ich HACCP (Hazard Analysis Critical Control Points). Dieses System ist speziell für die Lebensmittelsicherheit konzipiert.";
-      } else if (lowerCaseMessage.includes('risiko') || lowerCaseMessage.includes('risk')) {
-        responseContent = "Wenn Risikomanagement im Vordergrund steht, sollten Sie die ISO 14971 in Betracht ziehen, besonders in Kombination mit IEC 62366 für Medizinprodukte.";
-      } else if (lowerCaseMessage.includes('labor') || lowerCaseMessage.includes('lab')) {
-        responseContent = "Für allgemeine Laborforschung bietet ISO 9001 einen soliden Rahmen. Wenn jedoch spezifischere Anforderungen bestehen, können je nach Forschungsgebiet andere Standards wie ISO 17025 oder GLP (Good Laboratory Practice) relevant sein.";
+      
+      if (hasApiKey) {
+        // Use OpenAI for response
+        responseContent = await generateQMSAdvice(chatMessage, chatHistory);
       } else {
-        responseContent = "Ohne spezifischere Informationen zu Ihrem Projekt würde ich ISO 9001 als Ausgangspunkt empfehlen. Dies ist ein vielseitiger Standard, der für eine Vielzahl von Forschungsprojekten geeignet ist. Können Sie mir mehr Details zu Ihrem spezifischen Forschungsbereich geben?";
+        // Fallback to basic response logic if no API key
+        const lowerCaseMessage = chatMessage.toLowerCase();
+        
+        if (lowerCaseMessage.includes('medizinprodukt') || lowerCaseMessage.includes('medical device')) {
+          responseContent = "Für Medizinprodukte empfehle ich die ISO 13485. Diese Norm ist speziell für Qualitätsmanagementsysteme im Bereich der Medizinprodukte konzipiert und bietet die notwendigen Anforderungen für regulatorische Zwecke.";
+        } else if (lowerCaseMessage.includes('pharma') || lowerCaseMessage.includes('arzneimittel')) {
+          responseContent = "Für pharmazeutische Forschung empfehle ich cGMP (Current Good Manufacturing Practice). Dies ist der goldene Standard für die Herstellung und Qualitätskontrolle von Arzneimitteln.";
+        } else if (lowerCaseMessage.includes('lebensmittel') || lowerCaseMessage.includes('food')) {
+          responseContent = "Für Forschung im Bereich Lebensmittel oder Lebensmittelkontaktmaterialien empfehle ich HACCP (Hazard Analysis Critical Control Points). Dieses System ist speziell für die Lebensmittelsicherheit konzipiert.";
+        } else if (lowerCaseMessage.includes('risiko') || lowerCaseMessage.includes('risk')) {
+          responseContent = "Wenn Risikomanagement im Vordergrund steht, sollten Sie die ISO 14971 in Betracht ziehen, besonders in Kombination mit IEC 62366 für Medizinprodukte.";
+        } else if (lowerCaseMessage.includes('labor') || lowerCaseMessage.includes('lab')) {
+          responseContent = "Für allgemeine Laborforschung bietet ISO 9001 einen soliden Rahmen. Wenn jedoch spezifischere Anforderungen bestehen, können je nach Forschungsgebiet andere Standards wie ISO 17025 oder GLP (Good Laboratory Practice) relevant sein.";
+        } else {
+          responseContent = "Ohne spezifischere Informationen zu Ihrem Projekt würde ich ISO 9001 als Ausgangspunkt empfehlen. Dies ist ein vielseitiger Standard, der für eine Vielzahl von Forschungsprojekten geeignet ist. Können Sie mir mehr Details zu Ihrem spezifischen Forschungsbereich geben?";
+        }
       }
 
       const assistantMessage: Message = {
@@ -99,8 +122,21 @@ const QMSSelection = () => {
         timestamp: new Date()
       };
 
-      setChatHistory([...chatHistory, userMessage, assistantMessage]);
-    }, 1000);
+      setChatHistory((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Error getting AI response:", error);
+      
+      const errorMessage: Message = {
+        content: "Entschuldigung, aber ich konnte Ihre Anfrage nicht bearbeiten. Bitte versuchen Sie es später noch einmal.",
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+      
+      setChatHistory((prev) => [...prev, errorMessage]);
+      toast.error("Fehler bei der KI-Antwort");
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const qmsOptions = [
@@ -176,7 +212,6 @@ const QMSSelection = () => {
     }
   ];
 
-  // Questions for the assistant
   const questions = [
     {
       question: "Um welche Art von Forschungsprojekt handelt es sich?",
@@ -214,6 +249,7 @@ const QMSSelection = () => {
           <TabsTrigger value="selection">QMS Auswählen</TabsTrigger>
           <TabsTrigger value="assistant">KI-Assistent</TabsTrigger>
           <TabsTrigger value="comparison">Standards Vergleichen</TabsTrigger>
+          <TabsTrigger value="settings">Einstellungen</TabsTrigger>
         </TabsList>
         
         <TabsContent value="selection" className="space-y-6">
@@ -328,9 +364,19 @@ const QMSSelection = () => {
                       <div className="flex items-center space-x-2">
                         <Bot className="h-5 w-5 text-primary" />
                         <h3 className="font-medium">QMS-Auswahlassistent</h3>
+                        {!getOpenAIKey() && (
+                          <div className="ml-auto">
+                            <Button size="sm" variant="outline" className="text-xs" asChild>
+                              <a href="#settings" onClick={() => document.querySelector('[data-value="settings"]')?.dispatchEvent(new MouseEvent('click'))}>
+                                <Key className="h-3 w-3 mr-1" />
+                                API Key konfigurieren
+                              </a>
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex-grow p-4 overflow-y-auto space-y-4">
+                    <div className="flex-grow p-4 overflow-y-auto space-y-4" ref={chatContainerRef}>
                       {chatHistory.map((message, index) => (
                         <div 
                           key={index} 
@@ -343,7 +389,7 @@ const QMSSelection = () => {
                                 : 'bg-muted'
                             }`}
                           >
-                            <p>{message.content}</p>
+                            <p className="whitespace-pre-wrap">{message.content}</p>
                             <div className={`text-xs mt-1 ${
                               message.sender === 'user' 
                                 ? 'text-primary-foreground/70' 
@@ -354,6 +400,17 @@ const QMSSelection = () => {
                           </div>
                         </div>
                       ))}
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="max-w-[80%] p-3 rounded-lg bg-muted">
+                            <div className="flex space-x-2">
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse delay-150"></div>
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse delay-300"></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="p-3 border-t">
                       <div className="flex space-x-2">
@@ -362,12 +419,13 @@ const QMSSelection = () => {
                           onChange={(e) => setChatMessage(e.target.value)}
                           placeholder="Stellen Sie eine Frage zum QMS..."
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !isLoading) {
                               handleSendMessage();
                             }
                           }}
+                          disabled={isLoading}
                         />
-                        <Button size="icon" onClick={handleSendMessage}>
+                        <Button size="icon" onClick={handleSendMessage} disabled={isLoading || !chatMessage.trim()}>
                           <Send className="h-4 w-4" />
                         </Button>
                       </div>
@@ -482,6 +540,10 @@ const QMSSelection = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="settings">
+          <OpenAIConfig />
         </TabsContent>
       </Tabs>
     </div>

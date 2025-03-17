@@ -9,6 +9,11 @@ export interface Template {
   downloads: number;
   status?: 'draft' | 'published' | 'archived';
   tags?: string[];
+  content?: string;
+  qmsStandard?: string;
+  author?: string;
+  createdAt?: string;
+  version?: string;
 }
 
 export interface TemplateCategory {
@@ -21,4 +26,13 @@ export interface NewTemplate {
   category: string;
   description: string;
   type: string;
+  tags?: string[];
+  qmsStandard?: string;
+}
+
+export interface GenerateDocumentOptions {
+  template: Template;
+  qmsStandard?: string;
+  language?: string;
+  format?: 'text' | 'markdown' | 'html';
 }
