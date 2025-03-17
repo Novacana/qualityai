@@ -23,7 +23,8 @@ import {
   AlertCircle,
   BarChart,
   Activity,
-  Shield
+  Shield,
+  Plus
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatCard from "@/components/dashboard/StatCard";
@@ -82,7 +83,7 @@ const ProjectDetails = () => {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "Active": return "success";
-      case "Pending": return "warning";
+      case "Pending": return "outline";
       case "Completed": return "default";
       case "On Hold": return "secondary";
       default: return "outline";
@@ -92,7 +93,7 @@ const ProjectDetails = () => {
   const getTaskStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "Completed": return "success";
-      case "In Progress": return "warning";
+      case "In Progress": return "outline";
       case "Pending": return "secondary";
       default: return "outline";
     }
@@ -101,7 +102,7 @@ const ProjectDetails = () => {
   const getPriorityBadgeVariant = (priority: string) => {
     switch (priority) {
       case "High": return "destructive";
-      case "Medium": return "warning";
+      case "Medium": return "outline";
       case "Low": return "outline";
       default: return "outline";
     }
@@ -126,7 +127,7 @@ const ProjectDetails = () => {
                 Back to Projects
               </Link>
             </Button>
-            <Badge variant={getStatusBadgeVariant(project.status) as any}>
+            <Badge variant={getStatusBadgeVariant(project.status) as "default" | "secondary" | "destructive" | "outline"}>
               {project.status}
             </Badge>
           </div>
@@ -269,7 +270,7 @@ const ProjectDetails = () => {
                         <div className="text-xs text-muted-foreground">Updated: {doc.updatedAt}</div>
                       </div>
                     </div>
-                    <Badge variant={doc.status === "Approved" ? "success" : doc.status === "In Review" ? "warning" : "secondary"}>
+                    <Badge variant={doc.status === "Approved" ? "default" : doc.status === "In Review" ? "outline" : "secondary"}>
                       {doc.status}
                     </Badge>
                   </div>
