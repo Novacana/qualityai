@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Template } from "./types";
 import { useEffect } from "react";
 import { useTemplateGeneration } from "@/hooks/useTemplateGeneration";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TemplatePreviewDialogProps {
   template: Template;
@@ -25,7 +26,8 @@ export function TemplatePreviewDialog({
     setGeneratedContent, 
     isGenerating, 
     generateDocument, 
-    downloadDocument 
+    downloadDocument,
+    hasApiKey 
   } = useTemplateGeneration();
   
   // Clear generated content when dialog is closed
@@ -36,6 +38,7 @@ export function TemplatePreviewDialog({
   }, [open, setGeneratedContent]);
   
   const handleGenerate = async () => {
+    console.log('Generate button clicked, hasApiKey:', hasApiKey);
     await generateDocument(template);
   };
 
@@ -64,28 +67,44 @@ export function TemplatePreviewDialog({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full">
-              <FileText className="h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-medium">Kein Inhalt generiert</h3>
-              <p className="text-muted-foreground mt-2">
-                Klicken Sie auf "Generieren", um einen Inhalt für diese Vorlage zu erstellen.
-              </p>
-              <Button 
-                className="mt-4" 
-                onClick={handleGenerate}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Generiere...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generieren
-                  </>
-                )}
-              </Button>
+              {!hasApiKey ? (
+                <Alert className="max-w-md">
+                  <AlertTitle>OpenAI API Key fehlt</AlertTitle>
+                  <AlertDescription>
+                    Bitte konfigurieren Sie Ihren OpenAI API Key in den Einstellungen, um Dokumente zu generieren.
+                    <div className="mt-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href="/QMSSelection">Zu Einstellungen</a>
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <FileText className="h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium">Kein Inhalt generiert</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Klicken Sie auf "Generieren", um einen Inhalt für diese Vorlage zu erstellen.
+                  </p>
+                  <Button 
+                    className="mt-4" 
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Generiere...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Generieren
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </ScrollArea>

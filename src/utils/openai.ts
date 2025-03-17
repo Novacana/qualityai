@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // This is a temporary solution for storing the API key
@@ -6,6 +5,7 @@ import { toast } from "sonner";
 let apiKey = "";
 
 export const setOpenAIKey = (key: string) => {
+  console.log('Setting OpenAI API key');
   apiKey = key;
   localStorage.setItem("temp_openai_key", key);
   return true;
@@ -16,6 +16,7 @@ export const getOpenAIKey = () => {
     // Try to get from localStorage (temporary solution)
     const storedKey = localStorage.getItem("temp_openai_key");
     if (storedKey) {
+      console.log('Retrieved API key from localStorage');
       apiKey = storedKey;
     }
   }
@@ -41,6 +42,7 @@ export const callOpenAI = async (
   }
 
   try {
+    console.log(`Calling OpenAI API with model: ${model}`);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -63,6 +65,7 @@ export const callOpenAI = async (
     }
 
     const data = await response.json();
+    console.log('OpenAI API responded successfully');
     return data.choices[0].message.content;
   } catch (error) {
     console.error("Error calling OpenAI:", error);
@@ -81,6 +84,8 @@ export const generateSOPDocument = async (
   },
   qmsStandard: string = "ISO 9001"
 ) => {
+  console.log('Generating SOP document with template:', template);
+
   const systemPrompt = `Du bist ein Experte für Qualitätsmanagement und erstellst detaillierte Standard Operating Procedures (SOPs) für Forschungseinrichtungen.
   Erstelle eine vollständige, detaillierte SOP mit dem Titel "${template.title}" für die Kategorie "${template.category}" 
   gemäß dem QM-Standard ${qmsStandard}. 
@@ -103,7 +108,7 @@ export const generateSOPDocument = async (
     { role: "user", content: `Erstelle eine SOP für "${template.title}" gemäß ${qmsStandard}` }
   ];
 
-  return callOpenAI(messages, "gpt-4o", 0.7, 2500);
+  return callOpenAI(messages, "gpt-4o-mini", 0.7, 2500);
 };
 
 // Generate a response for the QMS AI advisor

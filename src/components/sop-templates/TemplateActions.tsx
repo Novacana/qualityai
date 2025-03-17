@@ -2,10 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { Template } from "./types";
 import { Download, FileText, Eye, Trash, Pencil } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 import { useTemplateGeneration } from "@/hooks/useTemplateGeneration";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TemplateActionsProps {
   template: Template;
@@ -28,8 +27,9 @@ export function TemplateActions({
   };
 
   const handleGenerate = async () => {
-    // No need to check API key here since it's already been validated on component mount
+    console.log('Generate button clicked in TemplateActions');
     setViewDialogOpen(true);
+    // Only generate if we have an API key
     if (hasApiKey) {
       await generateDocument(template);
     }

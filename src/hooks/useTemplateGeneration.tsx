@@ -11,7 +11,8 @@ export function useTemplateGeneration() {
   
   // Check for API key on mount
   useEffect(() => {
-    setHasApiKey(!!getOpenAIKey());
+    const key = getOpenAIKey();
+    setHasApiKey(!!key);
   }, []);
   
   const checkOpenAIKey = (): boolean => {
@@ -36,11 +37,18 @@ export function useTemplateGeneration() {
   };
 
   const generateDocument = async (template: Template) => {
+    // Add some debugging
+    console.log('Starting document generation for template:', template.title);
+    console.log('Current API key status:', hasApiKey ? 'API key is set' : 'No API key');
+    
+    // Always check the key again to be sure
     if (!checkOpenAIKey()) return null;
     
     setIsGenerating(true);
     try {
+      console.log('Calling OpenAI API...');
       const content = await generateSOPDocument(template);
+      console.log('Content generated successfully:', content ? 'Content received' : 'No content');
       setGeneratedContent(content);
       toast.success("SOP-Dokument erfolgreich generiert");
       return content;
