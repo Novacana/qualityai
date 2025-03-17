@@ -1,6 +1,7 @@
 
 import { FileWarning, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { getOpenAIKey } from "@/utils/openai";
 
 interface EmptyTemplatesListProps {
@@ -8,7 +9,11 @@ interface EmptyTemplatesListProps {
 }
 
 export const EmptyTemplatesList = ({ onCreateTemplate }: EmptyTemplatesListProps) => {
-  const hasApiKey = !!getOpenAIKey();
+  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  useEffect(() => {
+    setHasApiKey(!!getOpenAIKey());
+  }, []);
 
   return (
     <div className="py-12 text-center">
@@ -40,4 +45,4 @@ export const EmptyTemplatesList = ({ onCreateTemplate }: EmptyTemplatesListProps
       )}
     </div>
   );
-};
+}

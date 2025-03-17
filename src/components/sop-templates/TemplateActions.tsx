@@ -2,9 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Template } from "./types";
 import { Download, FileText, Eye, Trash, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 import { useTemplateGeneration } from "@/hooks/useTemplateGeneration";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TemplateActionsProps {
   template: Template;
@@ -20,15 +21,17 @@ export function TemplateActions({
   onEdit 
 }: TemplateActionsProps) {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const { isGenerating, checkOpenAIKey } = useTemplateGeneration();
+  const { isGenerating, hasApiKey, generateDocument } = useTemplateGeneration();
   
   const handleView = () => {
     setViewDialogOpen(true);
   };
 
   const handleGenerate = async () => {
-    if (checkOpenAIKey()) {
-      setViewDialogOpen(true);
+    // No need to check API key here since it's already been validated on component mount
+    setViewDialogOpen(true);
+    if (hasApiKey) {
+      await generateDocument(template);
     }
   };
 

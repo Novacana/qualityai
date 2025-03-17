@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Template } from "@/components/sop-templates/types";
 import { generateSOPDocument, getOpenAIKey } from "@/utils/openai";
@@ -7,9 +7,20 @@ import { generateSOPDocument, getOpenAIKey } from "@/utils/openai";
 export function useTemplateGeneration() {
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // Check for API key on mount
+  useEffect(() => {
+    setHasApiKey(!!getOpenAIKey());
+  }, []);
   
   const checkOpenAIKey = (): boolean => {
-    if (!getOpenAIKey()) {
+    const key = getOpenAIKey();
+    const hasKey = !!key;
+    
+    setHasApiKey(hasKey);
+    
+    if (!hasKey) {
       toast.error("Bitte konfigurieren Sie zuerst Ihren OpenAI API Key", {
         description: "Gehen Sie zu Einstellungen in der QMS Auswahl",
         action: {
@@ -69,6 +80,7 @@ export function useTemplateGeneration() {
     isGenerating,
     generateDocument,
     downloadDocument,
-    checkOpenAIKey
+    checkOpenAIKey,
+    hasApiKey
   };
 }
