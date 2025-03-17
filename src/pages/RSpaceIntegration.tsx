@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,24 @@ import { toast } from "sonner";
 
 type SyncDirection = 'qmsToRSpace' | 'rSpaceToQMS';
 
+type SyncSettings = {
+  qmsToRSpace: {
+    qualityProcedures: boolean;
+    sopDocuments: boolean;
+    trainingRecords: boolean;
+  };
+  rSpaceToQMS: {
+    experimentData: boolean;
+    labNotebooks: boolean;
+    researchFindings: boolean;
+  };
+}
+
 const RSpaceIntegration = () => {
   const [apiUrl, setApiUrl] = useState("https://rspace.leibniz-inm.de/api/v1");
   const [apiKey, setApiKey] = useState("••••••••••••••••••••••");
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("connected");
-  const [syncSettings, setSyncSettings] = useState({
+  const [syncSettings, setSyncSettings] = useState<SyncSettings>({
     qmsToRSpace: {
       qualityProcedures: true,
       sopDocuments: true,
