@@ -1,121 +1,97 @@
 
-import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { 
-  Home, 
-  Folder, 
-  FileText, 
-  Settings, 
-  Users, 
-  BookOpen, 
-  HelpCircle, 
-  MessageSquare,
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Files,
+  ClipboardList,
+  Settings,
+  Users,
+  BookOpen,
+  Database,
+  FileText,
   Shield,
-  ClipboardList
+  Menu,
+  X,
 } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
-  closeSidebar?: () => void;
+  closeSidebar: () => void;
 }
 
-const Sidebar = ({ isOpen, closeSidebar }: SidebarProps) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
   const location = useLocation();
-  const isMobile = useIsMobile();
-  const [mounted, setMounted] = useState(false);
-
-  // Handle animations for the sidebar
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  const navItems = [
-    { label: 'Dashboard', icon: Home, path: '/' },
-    { label: 'Projects', icon: Folder, path: '/projects' },
-    { label: 'Documents', icon: FileText, path: '/documents' },
-    { label: 'QMS Selection', icon: ClipboardList, path: '/qms-selection' },
-    { label: 'Users', icon: Users, path: '/users' },
-    { label: 'Documentation', icon: BookOpen, path: '/documentation' },
-    { label: 'Compliance', icon: Shield, path: '/compliance' },
-    { label: 'Support', icon: HelpCircle, path: '/support' },
-    { label: 'AI Assistant', icon: MessageSquare, path: '/assistant' },
-    { label: 'Settings', icon: Settings, path: '/settings' },
-  ];
-
-  const handleNavClick = () => {
-    if (isMobile && closeSidebar) {
-      closeSidebar();
-    }
+  
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
-  const sidebarClassName = `fixed inset-y-0 left-0 z-40 w-64 bg-sidebar transform transition-transform duration-300 ease-in-out border-r border-border h-screen ${
-    isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'
-  }`;
+  const navItems = [
+    { name: "Dashboard", icon: LayoutDashboard, path: "/" },
+    { name: "Projects", icon: Files, path: "/projects" },
+    { name: "Documents", icon: FileText, path: "/documents" },
+    { name: "QMS Selection", icon: Shield, path: "/qms-selection" },
+    { name: "SOP Templates", icon: ClipboardList, path: "/sop-templates" },
+    { name: "RSpace Integration", icon: Database, path: "/rspace-integration" },
+    { name: "Documentation", icon: BookOpen, path: "/documentation" },
+    { name: "User Management", icon: Users, path: "/users" },
+    { name: "Settings", icon: Settings, path: "/settings" },
+  ];
 
   return (
-    <aside className={sidebarClassName}>
-      <div className="flex flex-col h-full">
-        <ScrollArea className="flex-1 pt-5">
-          <nav className="px-2 space-y-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <TooltipProvider key={item.path} delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <NavLink 
-                        to={item.path}
-                        onClick={handleNavClick}
-                        className={({ isActive }) => 
-                          `flex items-center px-3 py-2 rounded-md transition-colors group ${
-                            isActive 
-                              ? 'bg-primary/10 text-primary' 
-                              : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-                          } ${!isOpen && 'md:justify-center'}`
-                        }
-                      >
-                        <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''} ${!isOpen && 'md:mr-0'}`} />
-                        <span className={`ml-3 font-medium text-sm ${!isOpen && 'md:hidden'}`}>
-                          {item.label}
-                        </span>
-                      </NavLink>
-                    </TooltipTrigger>
-                    {!isOpen && (
-                      <TooltipContent side="right" className="md:flex hidden">
-                        {item.label}
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            })}
-          </nav>
-        </ScrollArea>
-        
-        <div className="p-4 mt-auto">
-          <Separator className="mb-4" />
-          <div className={`flex items-center ${!isOpen && 'md:justify-center'}`}>
-            <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                LI
-              </div>
-            </div>
-            <div className={`ml-3 ${!isOpen && 'md:hidden'}`}>
-              <p className="text-sm font-medium">Leibniz Institute</p>
-              <p className="text-xs text-muted-foreground">QM Platform</p>
-            </div>
-          </div>
+    <>
+      {/* Mobile sidebar backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border shadow-lg transition-transform duration-300 ease-in-out md:shadow-none md:translate-x-0 md:z-0 md:top-16",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-border md:hidden">
+          <h2 className="text-xl font-bold">QMS Platform</h2>
+          <button onClick={closeSidebar} className="p-2 rounded-md hover:bg-muted">
+            <X className="h-5 w-5" />
+          </button>
         </div>
-      </div>
-    </aside>
+        
+        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100%-1rem)]">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm rounded-md group w-full",
+                isActive(item.path) 
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+              onClick={() => window.innerWidth < 768 && closeSidebar()}
+            >
+              <item.icon className="mr-3 h-5 w-5" />
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+      </aside>
+      
+      {/* Mobile sidebar toggle */}
+      <button
+        className="fixed bottom-4 right-4 z-30 p-3 bg-primary text-primary-foreground rounded-full shadow-lg md:hidden"
+        onClick={() => !isOpen && closeSidebar()}
+      >
+        <Menu className="h-6 w-6" />
+      </button>
+    </>
   );
 };
 
