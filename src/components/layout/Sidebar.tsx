@@ -32,11 +32,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
     { name: "Dashboard", icon: LayoutDashboard, path: "/" },
     { name: "Projects", icon: Files, path: "/projects" },
     { name: "Documents", icon: FileText, path: "/documents" },
-    { name: "QMS Selection", icon: Shield, path: "/qms-selection" },
+    { name: "QMS Selection", icon: Shield, path: "/QMSSelection" }, // Fixed capitalization
     { name: "SOP Templates", icon: ClipboardList, path: "/sop-templates" },
     { name: "RSpace Integration", icon: Database, path: "/rspace-integration" },
     { name: "Documentation", icon: BookOpen, path: "/documentation" },
-    { name: "User Management", icon: Users, path: "/users" },
+    { name: "User Management", icon: Users, path: "/user-management" }, // Fixed path to match App.tsx
     { name: "Settings", icon: Settings, path: "/settings" },
   ];
 
