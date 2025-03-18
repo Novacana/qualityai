@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,8 +63,12 @@ const CreateUserDialog = ({
 
   const handleCreate = (values: FormValues) => {
     onCreateUser({
-      ...values,
-      status: "Pending",
+      name: values.name,
+      email: values.email,
+      phone: values.phone || "",
+      role: values.role,
+      department: values.department,
+      status: "Pending"
     });
     setOpen(false);
     form.reset();

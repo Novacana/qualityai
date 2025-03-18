@@ -6,18 +6,10 @@ import UserList from "@/components/user-management/UserList";
 import { mockUsers } from "@/components/user-management/mock-data";
 import { User } from "@/components/user-management/types";
 import CreateUserDialog from "@/components/user-management/CreateUserDialog";
+import EditUserSheet from "@/components/user-management/EditUserSheet";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +75,7 @@ const UserManagement = () => {
     
     // Instead of hard deleting, mark as inactive
     const updatedUsers = users.map(user => 
-      user.id === userId ? { ...user, status: "Inactive" } : user
+      user.id === userId ? { ...user, status: "Inactive" as const } : user
     );
     
     setUsers(updatedUsers);
@@ -207,106 +199,16 @@ const UserManagement = () => {
         </SheetContent>
       </Sheet>
       
-      {/* Edit User Sheet - In a real implementation, this would be a form component */}
-      <Sheet open={userActionSheet === "edit"} onOpenChange={() => setUserActionSheet(null)}>
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Edit User</SheetTitle>
-            <SheetDescription>
-              Make changes to the user's information.
-            </SheetDescription>
-          </SheetHeader>
-          
-          {selectedUser && (
-            <div className="mt-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Name</Label>
-                  <Input 
-                    id="edit-name"
-                    value={selectedUser.name}
-                    onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input 
-                    id="edit-email"
-                    value={selectedUser.email}
-                    onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-phone">Phone</Label>
-                  <Input 
-                    id="edit-phone"
-                    value={selectedUser.phone}
-                    onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-department">Department</Label>
-                  <Input 
-                    id="edit-department"
-                    value={selectedUser.department}
-                    onChange={(e) => setSelectedUser({...selectedUser, department: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select 
-                    value={selectedUser.role}
-                    onValueChange={(value) => setSelectedUser({...selectedUser, role: value as User["role"]})}
-                  >
-                    <SelectTrigger id="edit-role">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select 
-                    value={selectedUser.status}
-                    onValueChange={(value) => setSelectedUser({...selectedUser, status: value as User["status"]})}
-                  >
-                    <SelectTrigger id="edit-status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="pt-4 flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setUserActionSheet(null)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => handleUpdateUser(selectedUser)}>
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Edit User Sheet - Using the new component */}
+      <EditUserSheet
+        open={userActionSheet === "edit"}
+        onOpenChange={(open) => !open && setUserActionSheet(null)}
+        user={selectedUser}
+        onUserChange={setSelectedUser}
+        onSave={handleUpdateUser}
+        roles={roles}
+        statuses={statuses}
+      />
     </div>
   );
 };
